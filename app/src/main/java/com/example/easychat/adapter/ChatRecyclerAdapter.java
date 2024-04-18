@@ -1,7 +1,9 @@
 package com.example.easychat.adapter;
 
+
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,13 +22,15 @@ import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
+
 public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageModel, ChatRecyclerAdapter.ChatModeViewHolder> {
 
     Context context;
-
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context) {
+    String chatroomId;
+    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
         super(options);
         this.context = context;
+        this.chatroomId = chatroomId;
     }
 
     @Override
@@ -35,11 +39,19 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.rightChatLayout.setVisibility(View.GONE);
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.leftChatTextview.setText(model.getMessage());
+            holder.leftChatLayout.setOnClickListener((new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteMessage(model.getMessageId());
+
+                }
+            }));
         } else {
             holder.rightChatLayout.setVisibility(View.VISIBLE);
             holder.leftChatLayout.setVisibility(View.GONE);
             holder.rightChatTextview.setText(model.getMessage());
         }
+
     }
 
     @NonNull
@@ -60,5 +72,9 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             leftChatTextview = itemView.findViewById(R.id.left_chat_textview);
             rightChatTextview = itemView.findViewById(R.id.right_chat_textview);
         }
+    }
+    private void deleteMessage(String messageId){
+        FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
+                .delete();
     }
 }

@@ -29,9 +29,15 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.AggregateQuery;
+import com.google.firebase.firestore.AggregateQuerySnapshot;
+import com.google.firebase.firestore.AggregateSource;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+import com.google.protobuf.NullValue;
 
 import org.json.JSONObject;
 
@@ -118,7 +124,7 @@ public class ChatActivity extends AppCompatActivity {
                 .setQuery(query, ChatMessageModel.class)
                 .build();
         // Tạo adapter cho RecyclerView
-        adapter = new ChatRecyclerAdapter(options, getApplicationContext());
+        adapter = new ChatRecyclerAdapter(options, getApplicationContext(), chatroomId);
         // Tạo và thiết lập LinearLayoutManager cho RecyclerView
         LinearLayoutManager manager = new LinearLayoutManager(this);
         manager.setReverseLayout(true);
@@ -133,6 +139,10 @@ public class ChatActivity extends AppCompatActivity {
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
                 recyclerView.smoothScrollToPosition(0);
+            }
+            public void onItemRangeRemoved(int positionStart, int itemCount) {
+                super.onItemRangeRemoved(positionStart, itemCount);
+                checkLast();
             }
         });
     }
@@ -160,10 +170,11 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageTimestamp(Timestamp.now());
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
+        DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
+        chatroomModel.setLastMessageId(newMessage.getId());
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
-
-        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now());
-        FirebaseUtil.getChatroomMessagesReference(chatroomId).add(chatMessageModel).addOnCompleteListener(task -> {
+        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), newMessage.getId());
+        newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 messageInput.setText("");
                 sendNotification(message);
@@ -218,6 +229,39 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
 
+            }
+        });
+    }
+    void checkLast(){
+        AggregateQuery countQuery = FirebaseUtil.getChatroomMessagesReference(chatroomId).count();
+        countQuery.get(AggregateSource.SERVER).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                // Count fetched successfully
+                AggregateQuerySnapshot snapshot = task.getResult();
+                if(snapshot.getCount() == 0){
+                    chatroomModel.setLastMessageTimestamp(Timestamp.now());
+                    chatroomModel.setLastMessageSenderId("");
+                    chatroomModel.setLastMessage("");
+                    FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
+                }
+                else{
+                    Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                            .limit(1);
+                    query.get().addOnCompleteListener(task_2 -> {
+                        if (task_2.isSuccessful()) {
+                            QuerySnapshot snapshot_2 = task_2.getResult();
+                            ChatMessageModel lastMessage = snapshot_2.getDocuments().get(0).toObject(ChatMessageModel.class);
+                            if(!Objects.equals(chatroomModel.getLastMessageId(), lastMessage.getMessageId())){
+                                chatroomModel.setLastMessageTimestamp(lastMessage.getTimestamp());
+                                chatroomModel.setLastMessageSenderId(lastMessage.getSenderId());
+                                chatroomModel.setLastMessage(lastMessage.getMessage());
+                                chatroomModel.setLastMessageId(lastMessage.getMessageId());
+                                FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
+                            }
+                        }
+                    });
+                }
             }
         });
     }
