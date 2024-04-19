@@ -73,6 +73,12 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.rightChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatTextview.setText(model.getMessage());
             holder.leftGroupLayout.setVisibility(View.GONE);
+            holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteMessage(model.getMessageId());
+                }
+            }));
         } else {
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
@@ -97,25 +103,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         super(options);
         this.context = context;
         this.chatroomId = chatroomId;
-    }
-
-    @Override
-    protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
-        if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
-            holder.leftChatLayout.setVisibility(View.GONE);
-            holder.rightChatLayout.setVisibility(View.VISIBLE);
-            holder.rightChatTextview.setText(model.getMessage());
-            holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    deleteMessage(model.getMessageId());
-                }
-            }));
-        } else {
-            holder.leftChatLayout.setVisibility(View.VISIBLE);
-            holder.rightChatLayout.setVisibility(View.GONE);
-            holder.leftChatTextview.setText(model.getMessage());
-        }
     }
 
     void deleteMessage(String messageId){
