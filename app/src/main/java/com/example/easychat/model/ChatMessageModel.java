@@ -6,20 +6,13 @@ public class ChatMessageModel {
     private String message;
     private String senderId;
     private Timestamp timestamp;
-    private String messageId;
+
     public ChatMessageModel() {
     }
-
-
-    public ChatMessageModel(String message, String senderId, Timestamp timestamp, String messageId) {
+    public ChatMessageModel(String message, String senderId, Timestamp timestamp) {
         this.message = message;
         this.senderId = senderId;
         this.timestamp = timestamp;
-        this.messageId = messageId;
-    }
-
-    public String getMessageId() {
-        return messageId;
     }
 
     public String getMessage() {
