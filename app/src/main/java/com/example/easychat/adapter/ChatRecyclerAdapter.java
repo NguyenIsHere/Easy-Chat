@@ -52,11 +52,11 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         }
     }
 
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context) {
+    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
         super(options);
         this.context = context;
+        this.chatroomId = chatroomId;
     }
-
     @Override
     protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
         if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
@@ -64,6 +64,12 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.rightChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatTextview.setText(model.getMessage());
             holder.leftGroupLayout.setVisibility(View.GONE);
+            holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteMessage(model.getMessageId());
+                }
+            }));
         } else {
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
@@ -81,6 +87,16 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                             .into(holder.leftChatImageView);
                 }
             });
+        }
+    }
+
+    void deleteMessage(String messageId){
+        try {
+            FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
+                    .delete();
+        }
+        catch (Exception e){
+            AndroidUtil.showToast(context, "Failed deleting message");
         }
     }
 }
