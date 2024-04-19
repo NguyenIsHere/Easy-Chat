@@ -61,11 +61,11 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         }
     }
 
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context) {
+    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
         super(options);
         this.context = context;
+        this.chatroomId = chatroomId;
     }
-
     @Override
     protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
         if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
@@ -97,12 +97,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                 }
             });
         }
-    }
-
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
-        super(options);
-        this.context = context;
-        this.chatroomId = chatroomId;
     }
 
     void deleteMessage(String messageId){
