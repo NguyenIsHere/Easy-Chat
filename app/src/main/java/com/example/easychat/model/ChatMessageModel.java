@@ -7,8 +7,10 @@ public class ChatMessageModel {
     private String senderId;
     private Timestamp timestamp;
     private String messageId;
+
     public ChatMessageModel() {
     }
+
 
     public ChatMessageModel(String message, String senderId, Timestamp timestamp, String messageId) {
         this.message = message;
@@ -44,4 +46,5 @@ public class ChatMessageModel {
     public void setTimestamp(Timestamp timestamp) {
         this.timestamp = timestamp;
     }
+
 }
