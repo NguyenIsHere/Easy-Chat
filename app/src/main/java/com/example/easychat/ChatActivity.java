@@ -1,6 +1,7 @@
 package com.example.easychat;
 
 import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -8,8 +9,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -27,17 +34,23 @@ import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.auth.User;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -60,6 +73,18 @@ public class ChatActivity extends AppCompatActivity {
     ChatRecyclerAdapter adapter;
     ImageView imageView;
 
+    ImageButton uploadBtn;
+
+    StorageReference storageReference;
+    Uri image;
+
+    private final ActivityResultLauncher<Intent> ActivityResultlauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        @Override
+        public void onActivityResult(ActivityResult o) {
+
+        }
+    });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -75,6 +100,7 @@ public class ChatActivity extends AppCompatActivity {
         otherUsername = findViewById(R.id.other_username);
         recyclerView = findViewById(R.id.chat_recycler_view);
         imageView = findViewById(R.id.profile_pic_image_view);
+        uploadBtn = findViewById(R.id.upload_btn);
 
         FirebaseUtil.getOtherProfilePicReference(otherUser.getUserId()).getDownloadUrl().addOnCompleteListener(t -> {
             if (t.isSuccessful()) {
@@ -171,6 +197,21 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    void uploadImage(Uri image){
+        StorageReference reference = storageReference.child("images/" + UUID.randomUUID().toString());
+        reference.putFile(image).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Toast.makeText(ChatActivity.this, "Image uploaded", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(ChatActivity.this, "Failure to upload", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     void sendNotification(String message) {
         // current username, message, current userid, other user token
         FirebaseUtil.currentUserDetails().get().addOnCompleteListener(task -> {
@@ -198,6 +239,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
 
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
