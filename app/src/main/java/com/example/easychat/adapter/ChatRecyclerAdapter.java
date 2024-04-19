@@ -30,32 +30,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
 
     Context context;
     String chatroomId;
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
-        super(options);
-        this.context = context;
-        this.chatroomId = chatroomId;
-    }
-
-    @Override
-    protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
-        if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
-            holder.rightChatLayout.setVisibility(View.GONE);
-            holder.leftChatLayout.setVisibility(View.VISIBLE);
-            holder.leftChatTextview.setText(model.getMessage());
-            holder.leftChatLayout.setOnClickListener((new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    deleteMessage(model.getMessageId());
-
-                }
-            }));
-        } else {
-            holder.rightChatLayout.setVisibility(View.VISIBLE);
-            holder.leftChatLayout.setVisibility(View.GONE);
-            holder.rightChatTextview.setText(model.getMessage());
-        }
-
-    }
 
     @NonNull
     @Override
@@ -76,7 +50,33 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             rightChatTextview = itemView.findViewById(R.id.right_chat_textview);
         }
     }
-    private void deleteMessage(String messageId){
+
+    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
+        super(options);
+        this.context = context;
+        this.chatroomId = chatroomId;
+    }
+
+    @Override
+    protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
+        if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
+            holder.leftChatLayout.setVisibility(View.GONE);
+            holder.rightChatLayout.setVisibility(View.VISIBLE);
+            holder.rightChatTextview.setText(model.getMessage());
+            holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteMessage(model.getMessageId());
+                }
+            }));
+        } else {
+            holder.leftChatLayout.setVisibility(View.VISIBLE);
+            holder.rightChatLayout.setVisibility(View.GONE);
+            holder.leftChatTextview.setText(model.getMessage());
+        }
+    }
+
+    void deleteMessage(String messageId){
         try {
             FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
                     .delete();
