@@ -238,6 +238,7 @@ public class ChatActivity extends AppCompatActivity {
             if (task.isSuccessful()) {
                 // Count fetched successfully
                 AggregateQuerySnapshot snapshot = task.getResult();
+                // Check there no more documents in collection
                 if(snapshot.getCount() == 0){
                     chatroomModel.setLastMessageTimestamp(Timestamp.now());
                     chatroomModel.setLastMessageSenderId("");
@@ -245,6 +246,7 @@ public class ChatActivity extends AppCompatActivity {
                     FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
                 }
                 else{
+                    // Get last message by timestamp
                     Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
                             .orderBy("timestamp", Query.Direction.DESCENDING)
                             .limit(1);
@@ -252,6 +254,7 @@ public class ChatActivity extends AppCompatActivity {
                         if (task_2.isSuccessful()) {
                             QuerySnapshot snapshot_2 = task_2.getResult();
                             ChatMessageModel lastMessage = snapshot_2.getDocuments().get(0).toObject(ChatMessageModel.class);
+                            // Compare last message in database with client model message
                             if(!Objects.equals(chatroomModel.getLastMessageId(), lastMessage.getMessageId())){
                                 chatroomModel.setLastMessageTimestamp(lastMessage.getTimestamp());
                                 chatroomModel.setLastMessageSenderId(lastMessage.getSenderId());

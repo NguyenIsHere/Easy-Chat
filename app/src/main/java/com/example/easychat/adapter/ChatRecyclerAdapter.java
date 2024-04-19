@@ -21,6 +21,9 @@ import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.Objects;
 
 
 public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageModel, ChatRecyclerAdapter.ChatModeViewHolder> {
@@ -74,7 +77,12 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         }
     }
     private void deleteMessage(String messageId){
-        FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
-                .delete();
+        try {
+            FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
+                    .delete();
+        }
+        catch (Exception e){
+            AndroidUtil.showToast(context, "Failed deleting message");
+        }
     }
 }
