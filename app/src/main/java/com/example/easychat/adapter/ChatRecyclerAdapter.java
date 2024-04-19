@@ -1,8 +1,11 @@
 package com.example.easychat.adapter;
 
+
 import android.content.Context;
 import android.content.Intent;
+
 import android.net.Uri;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,11 +25,17 @@ import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.Objects;
+
+
 
 public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageModel, ChatRecyclerAdapter.ChatModeViewHolder> {
 
     Context context;
-
+    String chatroomId;
+  
     @NonNull
     @Override
     public ChatModeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -52,11 +61,11 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         }
     }
 
-    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context) {
+    public ChatRecyclerAdapter(@NonNull FirestoreRecyclerOptions<ChatMessageModel> options, Context context, String chatroomId) {
         super(options);
         this.context = context;
+        this.chatroomId = chatroomId;
     }
-
     @Override
     protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
         if(model.getSenderId().equals(FirebaseUtil.currentUserId())) {
@@ -64,6 +73,12 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.rightChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatTextview.setText(model.getMessage());
             holder.leftGroupLayout.setVisibility(View.GONE);
+            holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    deleteMessage(model.getMessageId());
+                }
+            }));
         } else {
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
@@ -81,6 +96,16 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                             .into(holder.leftChatImageView);
                 }
             });
+        }
+    }
+
+    void deleteMessage(String messageId){
+        try {
+            FirebaseUtil.getChatroomMessagesReference(chatroomId).document(messageId)
+                    .delete();
+        }
+        catch (Exception e){
+            AndroidUtil.showToast(context, "Failed deleting message");
         }
     }
 }
