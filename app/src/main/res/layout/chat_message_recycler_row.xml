@@ -55,6 +55,13 @@
             android:layout_height="wrap_content"
             android:textColor="@color/white"
             android:textSize="18sp" />
+
+        <!--textview is used for showing message has seen by receiver-->
+        <TextView
+            android:id="@+id/seen_message_textview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
     </LinearLayout>
 
 

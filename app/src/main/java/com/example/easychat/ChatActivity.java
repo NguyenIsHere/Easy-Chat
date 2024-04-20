@@ -2,6 +2,7 @@ package com.example.easychat;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -10,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -28,11 +30,19 @@ import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.AggregateQuery;
 import com.google.firebase.firestore.AggregateQuerySnapshot;
 import com.google.firebase.firestore.AggregateSource;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
@@ -42,6 +52,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Objects;
 
 import okhttp3.Call;
@@ -64,7 +75,7 @@ public class ChatActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     ChatRecyclerAdapter adapter;
     ImageView imageView;
-
+    String messageId;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,6 +104,10 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         otherUsername.setText(otherUser.getUsername());
+        //co che giong nhu messenger, chi khi nao bat dau nhap tin nhan thi moi tinh la da xem
+        messageInput.setOnClickListener(v -> {
+            seenMessage();
+        });
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
@@ -101,12 +116,8 @@ public class ChatActivity extends AppCompatActivity {
             }
             sendMessageToUser(message);
         });
-
-
         getOrCreateChatroomModel();
         setupChatRecyclerView();
-
-
         // what is this
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -170,9 +181,10 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
         DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
-        chatroomModel.setLastMessageId(newMessage.getId());
+        messageId = newMessage.getId();
+        chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
-        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), newMessage.getId());
+        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), messageId, otherUser.getUserId(), false);
         newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 messageInput.setText("");
@@ -208,7 +220,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
         OkHttpClient client = new OkHttpClient();
@@ -266,5 +277,31 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    void seenMessage(){
+        CollectionReference reference =  FirebaseUtil.getChatroomMessagesReference(chatroomId);
+        reference.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                if (error != null){
+                    error.printStackTrace();
+                }
+                for (DocumentSnapshot snapshot: value.getDocuments()){
+                    // nguoi 1 send message nguoi 2 thi phai kiem tra nguoc nhau
+                    if(snapshot.getString("senderId").equals(otherUser.getUserId())
+                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())){
+                        HashMap<String, Object> map = new HashMap<>();
+                        map.put("seen", true);
+                        snapshot.getReference().update(map);
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        messageInput.setOnClickListener(null);
     }
 }

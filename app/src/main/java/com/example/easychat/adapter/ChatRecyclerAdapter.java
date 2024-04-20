@@ -25,8 +25,14 @@ import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.List;
 import java.util.Objects;
 
 
@@ -34,7 +40,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
 
     Context context;
     String chatroomId;
-
     @NonNull
     @Override
     public ChatModeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -46,7 +51,7 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         LinearLayout leftChatLayout, rightChatLayout, leftGroupLayout;
         TextView leftChatTextview, rightChatTextview;
         ImageView leftChatImageView;
-
+        TextView seenMessageTextview;
         public ChatModeViewHolder(@NonNull View itemView) {
             super(itemView);
             leftChatLayout = itemView.findViewById(R.id.left_chat_layout);
@@ -57,6 +62,7 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             leftChatTextview = itemView.findViewById(R.id.left_chat_textview);
             rightChatTextview = itemView.findViewById(R.id.right_chat_textview);
             leftChatImageView = itemView.findViewById(R.id.left_chat_imageview);
+            seenMessageTextview = itemView.findViewById(R.id.seen_message_textview);
         }
     }
 
@@ -73,6 +79,26 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.rightChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatTextview.setText(model.getMessage());
             holder.leftGroupLayout.setVisibility(View.GONE);
+            //check message on sender view
+            holder.seenMessageTextview.setVisibility(View.VISIBLE);
+            Task<DocumentSnapshot> reference = FirebaseUtil.getChatroomMessagesReference(chatroomId)
+                    .document(model.getMessageId())
+                    .get().addOnCompleteListener(task -> {
+                        Boolean isSeen;
+                        if(task.isSuccessful()){
+                            DocumentSnapshot snapshot = task.getResult();
+                            if(snapshot.exists()){
+                                isSeen = snapshot.getBoolean("seen");
+                                if(isSeen){
+                                    holder.seenMessageTextview.setText("Seen");
+                                }else{
+                                    holder.seenMessageTextview.setText("Delivered");
+                                }
+                            }else{
+                                task.getException().printStackTrace();
+                            }
+                        }
+                    });
             holder.rightChatLayout.setOnClickListener((new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -83,7 +109,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
             holder.leftChatTextview.setText(model.getMessage());
-
             // Get the sender's profile picture URL
             FirebaseUtil.getOtherProfilePicReference(model.getSenderId()).getDownloadUrl().addOnCompleteListener(t -> {
                 if (t.isSuccessful()) {

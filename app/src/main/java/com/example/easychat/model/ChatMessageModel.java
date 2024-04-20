@@ -8,15 +8,19 @@ public class ChatMessageModel {
     private Timestamp timestamp;
     private String messageId;
 
+    //variable for checking if message has seen
+    private String receiverId;
+    private Boolean seen;
+
     public ChatMessageModel() {
     }
-
-
-    public ChatMessageModel(String message, String senderId, Timestamp timestamp, String messageId) {
+    public ChatMessageModel(String message, String senderId, Timestamp timestamp, String messageId, String receiverId, Boolean seen) {
         this.message = message;
         this.senderId = senderId;
         this.timestamp = timestamp;
         this.messageId = messageId;
+        this.receiverId = receiverId;
+        this.seen = seen;
     }
 
     public String getMessageId() {
@@ -45,6 +49,22 @@ public class ChatMessageModel {
 
     public void setTimestamp(Timestamp timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getReceiverId() {
+        return receiverId;
+    }
+
+    public void setReceiverId(String receiverId) {
+        this.receiverId = receiverId;
+    }
+
+    public Boolean getSeen() {
+        return seen;
+    }
+
+    public void setSeen(Boolean seen) {
+        this.seen = seen;
     }
 
 }
