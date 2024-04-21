@@ -59,6 +59,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+import com.google.protobuf.NullValue;
 
 import com.google.protobuf.NullValue;
 
@@ -104,6 +105,8 @@ public class ChatActivity extends AppCompatActivity {
     ImageButton uploadBtn;
     Uri uri;
 
+
+    String messageId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -230,7 +233,7 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageTimestamp(Timestamp.now());
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
-        DocumentReference newMessage = FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
+        DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
         messageId = newMessage.getId();
         chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
