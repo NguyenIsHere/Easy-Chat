@@ -18,6 +18,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,19 +43,37 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.AggregateQuery;
+import com.google.firebase.firestore.AggregateQuerySnapshot;
+import com.google.firebase.firestore.AggregateSource;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+
+import com.google.protobuf.NullValue;
+
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import java.io.File;
 
+
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -79,8 +98,12 @@ public class ChatActivity extends AppCompatActivity {
     ChatRecyclerAdapter adapter;
     ImageView imageView;
 
+    String messageId;
+
+
     ImageButton uploadBtn;
     Uri uri;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +145,10 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         otherUsername.setText(otherUser.getUsername());
+        //co che giong nhu messenger, chi khi nao bat dau nhap tin nhan thi moi tinh la da xem
+        messageInput.setOnClickListener(v -> {
+            seenMessage();
+        });
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
@@ -158,7 +185,7 @@ public class ChatActivity extends AppCompatActivity {
                 .setQuery(query, ChatMessageModel.class)
                 .build();
         // Tạo adapter cho RecyclerView
-        adapter = new ChatRecyclerAdapter(options, getApplicationContext());
+        adapter = new ChatRecyclerAdapter(options, getApplicationContext(), chatroomId);
         // Tạo và thiết lập LinearLayoutManager cho RecyclerView
         LinearLayoutManager manager = new LinearLayoutManager(this);
         manager.setReverseLayout(true);
@@ -173,6 +200,10 @@ public class ChatActivity extends AppCompatActivity {
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
                 recyclerView.smoothScrollToPosition(0);
+            }
+            public void onItemRangeRemoved(int positionStart, int itemCount) {
+                super.onItemRangeRemoved(positionStart, itemCount);
+                checkLast();
             }
         });
     }
@@ -200,10 +231,18 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageTimestamp(Timestamp.now());
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
+        DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
+        messageId = newMessage.getId();
+        chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
+
+        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), messageId, otherUser.getUserId(), false);
+        newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
+
         ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now());
 
         FirebaseUtil.getChatroomMessagesReference(chatroomId).add(chatMessageModel).addOnCompleteListener(task -> {
+
             if (task.isSuccessful()) {
                 messageInput.setText("");
                 sendNotification(message);
@@ -238,7 +277,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
         OkHttpClient client = new OkHttpClient();
@@ -261,6 +299,70 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
+    void checkLast(){
+        AggregateQuery countQuery = FirebaseUtil.getChatroomMessagesReference(chatroomId).count();
+        countQuery.get(AggregateSource.SERVER).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                // Count fetched successfully
+                AggregateQuerySnapshot snapshot = task.getResult();
+                // Check there no more documents in collection
+                if(snapshot.getCount() == 0){
+                    chatroomModel.setLastMessageTimestamp(Timestamp.now());
+                    chatroomModel.setLastMessageSenderId("");
+                    chatroomModel.setLastMessage("");
+                    FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
+                }
+                else{
+                    // Get last message by timestamp
+                    Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                            .limit(1);
+                    query.get().addOnCompleteListener(task_2 -> {
+                        if (task_2.isSuccessful()) {
+                            QuerySnapshot snapshot_2 = task_2.getResult();
+                            ChatMessageModel lastMessage = snapshot_2.getDocuments().get(0).toObject(ChatMessageModel.class);
+                            // Compare last message in database with client model message
+                            if(!Objects.equals(chatroomModel.getLastMessageId(), lastMessage.getMessageId())){
+                                chatroomModel.setLastMessageTimestamp(lastMessage.getTimestamp());
+                                chatroomModel.setLastMessageSenderId(lastMessage.getSenderId());
+                                chatroomModel.setLastMessage(lastMessage.getMessage());
+                                chatroomModel.setLastMessageId(lastMessage.getMessageId());
+                                FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+    void seenMessage(){
+        CollectionReference reference =  FirebaseUtil.getChatroomMessagesReference(chatroomId);
+        reference.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                if (error != null){
+                    error.printStackTrace();
+                }
+                for (DocumentSnapshot snapshot: value.getDocuments()){
+                    // nguoi 1 send message nguoi 2 thi phai kiem tra nguoc nhau
+                    if(snapshot.getString("senderId").equals(otherUser.getUserId())
+                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())){
+                        HashMap<String, Object> map = new HashMap<>();
+                        map.put("seen", true);
+                        snapshot.getReference().update(map);
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        messageInput.setOnClickListener(null);
+    }
+
 
     private void showFileChooser(){
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -304,4 +406,5 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
 }
