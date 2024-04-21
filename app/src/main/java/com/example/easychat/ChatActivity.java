@@ -3,6 +3,7 @@ package com.example.easychat;
 import android.net.Uri;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -25,6 +26,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.easychat.adapter.ChatRecyclerAdapter;
 import com.example.easychat.adapter.SearchUserRecyclerAdapter;
 import com.example.easychat.model.ChatMessageModel;
@@ -37,10 +39,12 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.auth.User;
+import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -78,9 +82,18 @@ public class ChatActivity extends AppCompatActivity {
     StorageReference storageReference;
     Uri image;
 
-    private final ActivityResultLauncher<Intent> ActivityResultlauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+    private final ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
         @Override
         public void onActivityResult(ActivityResult o) {
+            if (o.getResultCode() ==  RESULT_OK) {
+                if (o.getData() != null) {
+                    image = o.getData().getData();
+                    uploadBtn.setEnabled(true);
+                    //Glide.with(getApplicationContext()).load(image)
+                }
+            }else{
+                Toast.makeText(ChatActivity.this, "Select an image", Toast.LENGTH_SHORT).show();
+            }
 
         }
     });
@@ -102,6 +115,9 @@ public class ChatActivity extends AppCompatActivity {
         imageView = findViewById(R.id.profile_pic_image_view);
         uploadBtn = findViewById(R.id.upload_btn);
 
+        FirebaseApp.initializeApp(ChatActivity.this);
+
+
         FirebaseUtil.getOtherProfilePicReference(otherUser.getUserId()).getDownloadUrl().addOnCompleteListener(t -> {
             if (t.isSuccessful()) {
                 Uri uri = t.getResult();
@@ -109,8 +125,18 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        backBtn.setOnClickListener(v -> {
-            getOnBackPressedDispatcher().onBackPressed();
+        //Change here to upload
+        uploadBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_PICK);
+                intent.setType("image/*");
+                activityResultLauncher.launch(intent);
+            }
+        }) ;
+
+        backBtn.setOnClickListener(v ->{
+            getOnBackPressedDispatcher().onBackPressed();;
         });
 
         otherUsername.setText(otherUser.getUsername());
