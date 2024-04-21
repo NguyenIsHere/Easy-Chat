@@ -76,6 +76,7 @@ public class ChatActivity extends AppCompatActivity {
     ChatRecyclerAdapter adapter;
     ImageView imageView;
     String messageId;
+    static boolean inChat;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,10 +105,6 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         otherUsername.setText(otherUser.getUsername());
-        //co che giong nhu messenger, chi khi nao bat dau nhap tin nhan thi moi tinh la da xem
-        messageInput.setOnClickListener(v -> {
-            seenMessage();
-        });
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
@@ -289,7 +286,8 @@ public class ChatActivity extends AppCompatActivity {
                 for (DocumentSnapshot snapshot: value.getDocuments()){
                     // nguoi 1 send message nguoi 2 thi phai kiem tra nguoc nhau
                     if(snapshot.getString("senderId").equals(otherUser.getUserId())
-                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())){
+                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())
+                            && inChat){
                         HashMap<String, Object> map = new HashMap<>();
                         map.put("seen", true);
                         snapshot.getReference().update(map);
@@ -298,10 +296,15 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        inChat = true;
+        seenMessage();
+    }
     @Override
     protected void onPause() {
         super.onPause();
-        messageInput.setOnClickListener(null);
+        inChat = false;
     }
 }
