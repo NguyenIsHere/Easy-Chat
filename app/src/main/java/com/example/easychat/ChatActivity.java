@@ -239,6 +239,29 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    void callApi(JSONObject jsonObject) {
+        MediaType JSON = MediaType.get("application/json; charset=utf-8");
+        OkHttpClient client = new OkHttpClient();
+        String url = "https://fcm.googleapis.com/fcm/send";
+        RequestBody body = RequestBody.create(jsonObject.toString(), JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .header("Authorization", "Bearer AAAAFwQ4qog:APA91bHeiZW-ENxXtIu6SaS1q4eZE6lxo8gHXWtwpNW1SpCTmnlAAW9XoA_8JwCn3AUirmL9PNoYBTv-4r5eKHwa-z4cPD9r7BNuagWGIaDYp5C_mhk8_CtX9b2IInzANdopZF4Vuz7C")
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+
+            }
+        });
+    }
+
     private void showFileChooser(){
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -278,30 +301,6 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Exception e) {
                 Toast.makeText(ChatActivity.this, "Failure to upload", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-
-    void callApi(JSONObject jsonObject) {
-        MediaType JSON = MediaType.get("application/json; charset=utf-8");
-        OkHttpClient client = new OkHttpClient();
-        String url = "https://fcm.googleapis.com/fcm/send";
-        RequestBody body = RequestBody.create(jsonObject.toString(), JSON);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .header("Authorization", "Bearer AAAAFwQ4qog:APA91bHeiZW-ENxXtIu6SaS1q4eZE6lxo8gHXWtwpNW1SpCTmnlAAW9XoA_8JwCn3AUirmL9PNoYBTv-4r5eKHwa-z4cPD9r7BNuagWGIaDYp5C_mhk8_CtX9b2IInzANdopZF4Vuz7C")
-                .build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-
             }
         });
     }
