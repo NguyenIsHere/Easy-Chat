@@ -106,7 +106,6 @@ public class ChatActivity extends AppCompatActivity {
     Uri uri;
 
 
-    String messageId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
