@@ -19,6 +19,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -48,6 +49,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import java.io.File;
 
 import org.json.JSONObject;
 
@@ -129,10 +131,7 @@ public class ChatActivity extends AppCompatActivity {
         uploadBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
-                activityResultLauncher.launch(intent);
+                showFileChooser();
             }
         }) ;
 
@@ -150,11 +149,8 @@ public class ChatActivity extends AppCompatActivity {
             sendMessageToUser(message);
         });
 
-
         getOrCreateChatroomModel();
         setupChatRecyclerView();
-
-
         // what is this
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -225,7 +221,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     void uploadImage(Uri image){
-        StorageReference reference = storageReference.child("images/" + UUID.randomUUID().toString());
+        StorageReference reference = storageReference.child("file/" + chatroomId +'/'+UUID.randomUUID().toString());
         reference.putFile(image).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
@@ -267,6 +263,29 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    private void showFileChooser(){
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        activityResultLauncher.launch(intent);
+
+        try{
+            startActivityForResult(Intent.createChooser(intent, "Select a file"), 100);
+        } catch (Exception exception){
+            Toast.makeText(this, "Please install a file manager", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data){
+        if (requestCode == 100  && resultCode == RESULT_OK && data != null){
+            Uri uri = data.getData();
+            String path = uri.getPath();
+            File file = new File(path);
+            Toast.makeText(this, "File uploaded", Toast.LENGTH_SHORT).show();
+
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
