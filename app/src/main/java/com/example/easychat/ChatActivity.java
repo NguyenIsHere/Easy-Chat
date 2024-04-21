@@ -82,23 +82,6 @@ public class ChatActivity extends AppCompatActivity {
     ImageButton uploadBtn;
 
     StorageReference storageReference;
-    Uri image;
-
-    private final ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-        @Override
-        public void onActivityResult(ActivityResult o) {
-            if (o.getResultCode() ==  RESULT_OK) {
-                if (o.getData() != null) {
-                    image = o.getData().getData();
-                    uploadBtn.setEnabled(true);
-                    //Glide.with(getApplicationContext()).load(image)
-                }
-            }else{
-                Toast.makeText(ChatActivity.this, "Select an image", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,20 +203,6 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    void uploadImage(Uri image){
-        StorageReference reference = storageReference.child("file/" + chatroomId +'/'+UUID.randomUUID().toString());
-        reference.putFile(image).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                Toast.makeText(ChatActivity.this, "Image uploaded", Toast.LENGTH_SHORT).show();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(ChatActivity.this, "Failure to upload", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
 
     void sendNotification(String message) {
         // current username, message, current userid, other user token
@@ -267,7 +236,6 @@ public class ChatActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
-        activityResultLauncher.launch(intent);
 
         try{
             startActivityForResult(Intent.createChooser(intent, "Select a file"), 100);
@@ -281,11 +249,28 @@ public class ChatActivity extends AppCompatActivity {
             Uri uri = data.getData();
             String path = uri.getPath();
             File file = new File(path);
-            Toast.makeText(this, "File uploaded", Toast.LENGTH_SHORT).show();
-
+            Toast.makeText(this, "File"+ uri+" uploaded", Toast.LENGTH_SHORT).show();
+            super.onActivityResult(requestCode, resultCode, data);
+            uploadFile(uri);
         }
-        super.onActivityResult(requestCode, resultCode, data);
     }
+
+    void uploadFile(Uri uri){
+        //Uri file =  Uri.fromFile(new File(path));
+        StorageReference reference = storageReference.child("file/" + chatroomId +'/'+UUID.randomUUID().toString());
+        reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Toast.makeText(ChatActivity.this, "file uploaded", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(ChatActivity.this, "Failure to upload", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
