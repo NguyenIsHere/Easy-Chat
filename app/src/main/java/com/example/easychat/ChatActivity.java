@@ -80,8 +80,7 @@ public class ChatActivity extends AppCompatActivity {
     ImageView imageView;
 
     ImageButton uploadBtn;
-
-    StorageReference storageReference;
+    Uri uri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,10 +125,19 @@ public class ChatActivity extends AppCompatActivity {
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
-            if (message.isEmpty()) {
+            if (message.isEmpty() && uri==null) {
                 return;
+            }else if (message.isEmpty()){
+                String path= uri.getPath();
+
+                String[] str = path.split("/");
+                message = str[str.length-1];
+                sendMessageToUser(message);
+                uploadFile(uri);
+                uri = null;
+            }else{
+                sendMessageToUser(message);
             }
-            sendMessageToUser(message);
         });
 
         getOrCreateChatroomModel();
@@ -193,8 +201,8 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
-
         ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now());
+
         FirebaseUtil.getChatroomMessagesReference(chatroomId).add(chatMessageModel).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 messageInput.setText("");
@@ -202,7 +210,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
 
     void sendNotification(String message) {
         // current username, message, current userid, other user token
@@ -246,12 +253,16 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data){
         if (requestCode == 100  && resultCode == RESULT_OK && data != null){
-            Uri uri = data.getData();
+            uri = data.getData();
             String path = uri.getPath();
-            File file = new File(path);
-            Toast.makeText(this, "File"+ uri+" uploaded", Toast.LENGTH_SHORT).show();
+            //File file = new File(path);
+            String[] str = path.split("/");
+            String file_name = str[str.length-1];
+
+            //Toast.makeText(this, "File"+ path+" uploaded", Toast.LENGTH_SHORT).show();
             super.onActivityResult(requestCode, resultCode, data);
-            uploadFile(uri);
+            //uploadFile(uri);
+            //sendMessageToUser(file_name, true);
         }
     }
 
