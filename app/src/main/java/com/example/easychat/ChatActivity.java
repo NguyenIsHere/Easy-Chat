@@ -160,7 +160,6 @@ public class ChatActivity extends AppCompatActivity {
                 String[] str = path.split("/");
                 message = str[str.length-1];
                 sendMessageToUser(message);
-                uploadFile(uri);
                 uri = null;
             }else{
                 sendMessageToUser(message);
@@ -231,18 +230,14 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageTimestamp(Timestamp.now());
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
-        DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
+        DocumentReference newMessage = FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
         messageId = newMessage.getId();
         chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
-
         ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), messageId, otherUser.getUserId(), false);
+        if(uri != null){
+            uploadFile(uri, messageId);}
         newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
-
-        ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now());
-
-        FirebaseUtil.getChatroomMessagesReference(chatroomId).add(chatMessageModel).addOnCompleteListener(task -> {
-
             if (task.isSuccessful()) {
                 messageInput.setText("");
                 sendNotification(message);
@@ -389,11 +384,12 @@ public class ChatActivity extends AppCompatActivity {
             //uploadFile(uri);
             //sendMessageToUser(file_name, true);
         }
+
     }
 
-    void uploadFile(Uri uri){
+    void uploadFile(Uri uri, String messageId){
         //Uri file =  Uri.fromFile(new File(path));
-        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(UUID.randomUUID().toString()));
+        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
         reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
