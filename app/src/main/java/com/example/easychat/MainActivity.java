@@ -14,6 +14,7 @@ import com.example.easychat.utils.FirebaseUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.storage.StorageReference;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,6 +22,8 @@ public class MainActivity extends AppCompatActivity {
     ImageButton searchButton;
     ChatFragment chatFragment;
     ProfileFragment profileFragment;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
