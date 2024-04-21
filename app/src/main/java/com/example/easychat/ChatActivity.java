@@ -257,7 +257,7 @@ public class ChatActivity extends AppCompatActivity {
 
     void uploadFile(Uri uri){
         //Uri file =  Uri.fromFile(new File(path));
-        StorageReference reference = storageReference.child("file/" + chatroomId +'/'+UUID.randomUUID().toString());
+        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(UUID.randomUUID().toString()));
         reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
