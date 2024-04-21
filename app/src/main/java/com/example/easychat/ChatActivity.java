@@ -101,11 +101,8 @@ public class ChatActivity extends AppCompatActivity {
 
     String messageId;
 
-
     ImageButton uploadBtn;
     Uri uri;
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
