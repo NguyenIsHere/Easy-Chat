@@ -106,8 +106,6 @@ public class ChatActivity extends AppCompatActivity {
     Uri uri;
 
 
-    String messageId;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -297,7 +295,6 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-
     void checkLast(){
         AggregateQuery countQuery = FirebaseUtil.getChatroomMessagesReference(chatroomId).count();
         countQuery.get(AggregateSource.SERVER).addOnCompleteListener(task -> {
