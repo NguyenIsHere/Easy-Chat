@@ -59,6 +59,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.protobuf.NullValue;
 
 import com.google.protobuf.NullValue;
@@ -100,7 +101,6 @@ public class ChatActivity extends AppCompatActivity {
     ImageView imageView;
 
     String messageId;
-
 
     ImageButton uploadBtn;
     Uri uri;
@@ -375,20 +375,17 @@ public class ChatActivity extends AppCompatActivity {
         if (requestCode == 100  && resultCode == RESULT_OK && data != null){
             uri = data.getData();
             String path = uri.getPath();
-            //File file = new File(path);
-            String[] str = path.split("/");
-            String file_name = str[str.length-1];
+            //String[] str = path.split("/");
+            //String file_name = str[str.length-1];
 
-            //Toast.makeText(this, "File"+ path+" uploaded", Toast.LENGTH_SHORT).show();
             super.onActivityResult(requestCode, resultCode, data);
-            //uploadFile(uri);
-            //sendMessageToUser(file_name, true);
+
         }
 
     }
 
     void uploadFile(Uri uri, String messageId){
-        //Uri file =  Uri.fromFile(new File(path));
+
         StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
         reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
@@ -403,4 +400,26 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    void downloadFile(String messageID){
+        StorageReference pathReference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(messageID);
+
+        try{
+            File f = File.createTempFile("image", "jpg");
+            String filename = f.getName();
+            pathReference.getFile(f).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                    Toast.makeText(ChatActivity.this, "File downloaded", Toast.LENGTH_SHORT).show();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Toast.makeText(ChatActivity.this, "File fail to download", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }catch (IOException ex){
+            Toast.makeText(ChatActivity.this, "Unable to create file", Toast.LENGTH_SHORT).show();
+
+        }
+    }
 }
