@@ -1,6 +1,7 @@
 package com.example.easychat;
 
 import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -9,6 +10,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +28,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.easychat.adapter.ChatRecyclerAdapter;
 import com.example.easychat.adapter.SearchUserRecyclerAdapter;
 import com.example.easychat.model.ChatMessageModel;
@@ -28,7 +38,10 @@ import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -48,12 +61,22 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
 import com.google.protobuf.NullValue;
 
+import com.google.protobuf.NullValue;
+
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import java.io.File;
+
+
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.UUID;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -75,8 +98,13 @@ public class ChatActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     ChatRecyclerAdapter adapter;
     ImageView imageView;
+
     String messageId;
     static boolean inChat;
+
+    ImageButton uploadBtn;
+    Uri uri;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,6 +120,10 @@ public class ChatActivity extends AppCompatActivity {
         otherUsername = findViewById(R.id.other_username);
         recyclerView = findViewById(R.id.chat_recycler_view);
         imageView = findViewById(R.id.profile_pic_image_view);
+        uploadBtn = findViewById(R.id.upload_btn);
+
+        FirebaseApp.initializeApp(ChatActivity.this);
+
 
         FirebaseUtil.getOtherProfilePicReference(otherUser.getUserId()).getDownloadUrl().addOnCompleteListener(t -> {
             if (t.isSuccessful()) {
@@ -100,19 +132,36 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        backBtn.setOnClickListener(v -> {
-            getOnBackPressedDispatcher().onBackPressed();
+        //Change here to upload
+        uploadBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showFileChooser();
+            }
+        }) ;
+
+        backBtn.setOnClickListener(v ->{
+            getOnBackPressedDispatcher().onBackPressed();;
         });
 
         otherUsername.setText(otherUser.getUsername());
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
-            if (message.isEmpty()) {
+            if (message.isEmpty() && uri==null) {
                 return;
+            }else if (message.isEmpty()){
+                String path= uri.getPath();
+
+                String[] str = path.split("/");
+                message = str[str.length-1];
+                sendMessageToUser(message);
+                uri = null;
+            }else{
+                sendMessageToUser(message);
             }
-            sendMessageToUser(message);
         });
+
         getOrCreateChatroomModel();
         setupChatRecyclerView();
         // what is this
@@ -182,6 +231,8 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
         ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), messageId, otherUser.getUserId(), false);
+        if(uri != null){
+            uploadFile(uri, messageId);}
         newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 messageInput.setText("");
@@ -239,6 +290,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
     void checkLast(){
         AggregateQuery countQuery = FirebaseUtil.getChatroomMessagesReference(chatroomId).count();
         countQuery.get(AggregateSource.SERVER).addOnCompleteListener(task -> {
@@ -307,4 +359,50 @@ public class ChatActivity extends AppCompatActivity {
         super.onPause();
         inChat = false;
     }
+
+
+    private void showFileChooser(){
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+
+        try{
+            startActivityForResult(Intent.createChooser(intent, "Select a file"), 100);
+        } catch (Exception exception){
+            Toast.makeText(this, "Please install a file manager", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data){
+        if (requestCode == 100  && resultCode == RESULT_OK && data != null){
+            uri = data.getData();
+            String path = uri.getPath();
+            //File file = new File(path);
+            String[] str = path.split("/");
+            String file_name = str[str.length-1];
+
+            //Toast.makeText(this, "File"+ path+" uploaded", Toast.LENGTH_SHORT).show();
+            super.onActivityResult(requestCode, resultCode, data);
+            //uploadFile(uri);
+            //sendMessageToUser(file_name, true);
+        }
+
+    }
+
+    void uploadFile(Uri uri, String messageId){
+        //Uri file =  Uri.fromFile(new File(path));
+        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
+        reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Toast.makeText(ChatActivity.this, "file uploaded", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Toast.makeText(ChatActivity.this, "Failure to upload", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }
