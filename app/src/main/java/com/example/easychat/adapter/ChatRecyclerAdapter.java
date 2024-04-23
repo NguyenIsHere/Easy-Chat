@@ -6,12 +6,14 @@ import android.content.Intent;
 
 import android.net.Uri;
 
+import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,21 +28,27 @@ import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.List;
 import java.util.Objects;
-
+import java.io.File;
 
 public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageModel, ChatRecyclerAdapter.ChatModeViewHolder> {
 
     Context context;
     String chatroomId;
+    String filename = "";
     @NonNull
     @Override
     public ChatModeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -106,6 +114,14 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                     deleteMessage(model.getMessageId());
                 }
             }));
+            holder.rightChatLayout.setOnLongClickListener((new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    downloadFile(model.getMessageId());
+                    return true;
+                }
+            }));
+            ;
         } else {
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
@@ -133,7 +149,46 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         }
     }
 
-    Uri returnRef(String chatroomId, String messageID){
-       return null;
+    public StorageReference getReference(String chatroomId, String messageID){
+       return FirebaseStorage.getInstance().getReference().child("file").child(chatroomId).child(messageID);
+    }
+
+    public void downloadFile(String messageID){
+        StorageReference pathReference = getReference(chatroomId, messageID);
+
+        pathReference.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
+            @Override
+            public void onSuccess(StorageMetadata storageMetadata) {
+                filename = storageMetadata.getCustomMetadata("File_name");
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                return;
+            }
+        });
+
+        File rootPath = new File(Environment.getExternalStorageDirectory(), "file_name");
+
+        if(!rootPath.exists()) {
+            rootPath.mkdirs();
+        }
+        final File localFile = new File(rootPath,filename);
+
+        pathReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+                //  updateDb(timestamp,localFile.toString(),position);
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                Toast.makeText(context, "File failed to download", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+
     }
 }

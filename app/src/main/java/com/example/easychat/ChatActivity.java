@@ -383,7 +383,7 @@ public class ChatActivity extends AppCompatActivity {
             if (i > 0) {
                 extension = path.substring(i+1);
             }
-            Log.d("Myapp", extension);
+            //Log.d("Myapp", extension);
 
             super.onActivityResult(requestCode, resultCode, data);
 
@@ -393,7 +393,7 @@ public class ChatActivity extends AppCompatActivity {
 
     void uploadFile(Uri uri, String messageId){
 
-        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
+        StorageReference reference = adapter.getReference(chatroomId, messageId);
         String file_name = uri.getPath();
         String[] temp = file_name.split("/");
         file_name = temp[temp.length-1];
@@ -415,26 +415,4 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    void downloadFile(String messageID){
-        StorageReference pathReference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(messageID);
-
-        try{
-            File f = File.createTempFile("image", "jpg");
-            String filename = f.getName();
-            pathReference.getFile(f).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                    Toast.makeText(ChatActivity.this, "File downloaded", Toast.LENGTH_SHORT).show();
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(ChatActivity.this, "File fail to download", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }catch (IOException ex){
-            Toast.makeText(ChatActivity.this, "Unable to create file", Toast.LENGTH_SHORT).show();
-
-        }
-    }
 }
