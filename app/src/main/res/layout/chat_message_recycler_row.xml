@@ -5,9 +5,9 @@
     android:padding="8dp">
 
     <LinearLayout
+        android:id="@+id/left_group_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/left_group_layout"
         android:gravity="center">
 
         <ImageView
@@ -32,37 +32,66 @@
                 android:id="@+id/left_chat_textview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/white"
+                android:textColor="@color/black"
                 android:textSize="18sp" />
         </LinearLayout>
 
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/right_chat_layout"
+        android:id="@+id/right_group_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/left_group_layout"
         android:layout_alignParentEnd="true"
-        android:layout_marginStart="80dp"
-        android:background="@drawable/edit_text_rounded_corner"
-        android:backgroundTint="@color/chat_color_receiver"
-        android:padding="8dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/right_chat_textview"
+        <LinearLayout
+            android:id="@+id/sub_right_group_layout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:textSize="18sp" />
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp">
+
+            <TextView
+                android:id="@+id/delete_message_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/edit_text_rounded_corner"
+                android:backgroundTint="@color/my_secondary"
+                android:padding="10dp"
+                android:text="Delete"
+                android:textColor="@color/chat_color_sender"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/right_chat_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/edit_text_rounded_corner"
+                android:backgroundTint="@color/chat_color_receiver"
+                android:padding="8dp"
+                android:layout_marginStart="10dp">
+
+                <TextView
+                    android:id="@+id/right_chat_textview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+        </LinearLayout>
 
         <!--textview is used for showing message has seen by receiver-->
         <TextView
             android:id="@+id/seen_message_textview"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:textColor="@color/chat_color_sender" />
 
     </LinearLayout>
-
 
 </RelativeLayout>
