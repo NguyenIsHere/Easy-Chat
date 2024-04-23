@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.net.Uri;
 
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -121,7 +122,8 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                     return true;
                 }
             }));
-            ;
+
+
         } else {
             holder.leftChatLayout.setVisibility(View.VISIBLE);
             holder.rightChatLayout.setVisibility(View.GONE);
@@ -138,6 +140,14 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                             .into(holder.leftChatImageView);
                 }
             });
+            holder.leftChatLayout.setOnLongClickListener((new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    downloadFile(model.getMessageId());
+                    Log.d("ZmessID", model.getMessageId());
+                    return true;
+                }
+            }));
         }
     }
 
@@ -155,11 +165,29 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
 
     public void downloadFile(String messageID){
         StorageReference pathReference = getReference(chatroomId, messageID);
-
+        Log.d("eMetadate", pathReference.toString());
         pathReference.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
             @Override
             public void onSuccess(StorageMetadata storageMetadata) {
                 filename = storageMetadata.getCustomMetadata("File_name");
+                //Log.d("eMetadate1", filename);
+                File rootPath = new File(Environment.getExternalStorageDirectory(), "Download");
+
+                Log.d("eMetadate2", filename);
+                final File localFile = new File(rootPath,filename);
+
+                pathReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                        Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+                        Log.d("eMetadate", "new file");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        Toast.makeText(context, "File failed to download", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -167,27 +195,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                 return;
             }
         });
-
-        File rootPath = new File(Environment.getExternalStorageDirectory(), "file_name");
-
-        if(!rootPath.exists()) {
-            rootPath.mkdirs();
-        }
-        final File localFile = new File(rootPath,filename);
-
-        pathReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
-            @Override
-            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
-                //  updateDb(timestamp,localFile.toString(),position);
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                Toast.makeText(context, "File failed to download", Toast.LENGTH_SHORT).show();
-            }
-        });
-
 
 
     }
