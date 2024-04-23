@@ -31,6 +31,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.List;
 import java.util.Objects;
@@ -130,5 +131,9 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         } catch (Exception e) {
             AndroidUtil.showToast(context, "Failed deleting message");
         }
+    }
+
+    Uri returnRef(String chatroomId, String messageID){
+       return null;
     }
 }

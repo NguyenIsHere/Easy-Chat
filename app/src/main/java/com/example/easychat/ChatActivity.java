@@ -3,6 +3,7 @@ package com.example.easychat;
 import android.net.Uri;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -60,6 +61,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
 import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.StorageMetadata;
 import com.google.protobuf.NullValue;
 
 import com.google.protobuf.NullValue;
@@ -375,8 +377,13 @@ public class ChatActivity extends AppCompatActivity {
         if (requestCode == 100  && resultCode == RESULT_OK && data != null){
             uri = data.getData();
             String path = uri.getPath();
-            //String[] str = path.split("/");
-            //String file_name = str[str.length-1];
+            String extension = "";
+
+            int i = path.lastIndexOf('.');
+            if (i > 0) {
+                extension = path.substring(i+1);
+            }
+            Log.d("Myapp", extension);
 
             super.onActivityResult(requestCode, resultCode, data);
 
@@ -387,10 +394,18 @@ public class ChatActivity extends AppCompatActivity {
     void uploadFile(Uri uri, String messageId){
 
         StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
+        String file_name = uri.getPath();
+        String[] temp = file_name.split("/");
+        file_name = temp[temp.length-1];
+
+        StorageMetadata metadata = new StorageMetadata.Builder()
+                .setCustomMetadata("File_name", file_name).build();
+
         reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 Toast.makeText(ChatActivity.this, "file uploaded", Toast.LENGTH_SHORT).show();
+                 reference.updateMetadata(metadata);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
