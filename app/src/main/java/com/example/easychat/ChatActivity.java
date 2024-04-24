@@ -450,4 +450,8 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    public ChatRecyclerAdapter.ChatModeViewHolder getViewHolder(int position) {
+        return (ChatRecyclerAdapter.ChatModeViewHolder) recyclerView.findViewHolderForAdapterPosition(position);
+    }
+
 }
