@@ -6,12 +6,15 @@ import android.content.Intent;
 
 import android.net.Uri;
 
+import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,21 +29,27 @@ import com.example.easychat.utils.FirebaseUtil;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.List;
 import java.util.Objects;
-
+import java.io.File;
 
 public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageModel, ChatRecyclerAdapter.ChatModeViewHolder> {
 
     Context context;
     String chatroomId;
-
+    String filename = "";
     @NonNull
     @Override
     public ChatModeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -59,7 +68,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             super(itemView);
             leftChatLayout = itemView.findViewById(R.id.left_chat_layout);
             rightChatLayout = itemView.findViewById(R.id.right_chat_layout);
-
             // Contain the leftChatImageView, leftChatLayout and leftChatTextview
             leftGroupLayout = itemView.findViewById(R.id.left_group_layout);
 
@@ -72,7 +80,6 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             leftChatTextview = itemView.findViewById(R.id.left_chat_textview);
             rightChatTextview = itemView.findViewById(R.id.right_chat_textview);
             leftChatImageView = itemView.findViewById(R.id.left_chat_imageview);
-
             seenMessageTextview = itemView.findViewById(R.id.seen_message_textview);
             deleteMessageTextview = itemView.findViewById(R.id.delete_message_textview);
         }
@@ -118,6 +125,10 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                 });
                 return true;
             });
+
+            holder.rightChatLayout.setOnClickListener(view -> {
+                downloadFile(model.getMessageId());
+            });
         } else {
             holder.rightGroupLayout.setVisibility(View.GONE);
             holder.leftChatLayout.setVisibility(View.VISIBLE);
@@ -134,6 +145,9 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                             .into(holder.leftChatImageView);
                 }
             });
+            holder.leftChatLayout.setOnClickListener(view -> {
+                downloadFile(model.getMessageId());
+            });
         }
     }
 
@@ -143,5 +157,43 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         } catch (Exception e) {
             AndroidUtil.showToast(context, "Failed deleting message");
         }
+    }
+
+    public StorageReference getReference(String chatroomId, String messageID){
+       return FirebaseStorage.getInstance().getReference().child("file").child(chatroomId).child(messageID);
+    }
+
+    public void downloadFile(String messageID){
+        StorageReference pathReference = getReference(chatroomId, messageID);
+        Log.d("eMetadate", pathReference.toString());
+        pathReference.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
+            @Override
+            public void onSuccess(StorageMetadata storageMetadata) {
+                filename = storageMetadata.getCustomMetadata("File_name");
+                //Log.d("eMetadate1", filename);
+                File rootPath = new File(Environment.getExternalStorageDirectory(), "Download");
+
+                Log.d("eMetadate2", filename);
+                final File localFile = new File(rootPath,filename);
+
+                pathReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                        Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+                        Log.d("eMetadate", "new file");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        Toast.makeText(context, "File failed to download", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                return;
+            }
+        });
     }
 }

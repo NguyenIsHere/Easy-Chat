@@ -5,6 +5,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -62,6 +63,8 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.auth.User;
+import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.StorageMetadata;
 import com.google.protobuf.NullValue;
 
 import com.google.protobuf.NullValue;
@@ -70,7 +73,6 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-
 import java.io.File;
 
 
@@ -224,14 +226,11 @@ public class ChatActivity extends AppCompatActivity {
                 super.onItemRangeInserted(positionStart, itemCount);
                 recyclerView.smoothScrollToPosition(0);
             }
-
             public void onItemRangeRemoved(int positionStart, int itemCount) {
                 super.onItemRangeRemoved(positionStart, itemCount);
                 checkLast();
             }
         });
-
-
     }
 
     void getOrCreateChatroomModel() {
@@ -413,25 +412,35 @@ public class ChatActivity extends AppCompatActivity {
         if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
             uri = data.getData();
             String path = uri.getPath();
-            //File file = new File(path);
-            String[] str = path.split("/");
-            String file_name = str[str.length - 1];
+            String extension = "";
 
-            //Toast.makeText(this, "File"+ path+" uploaded", Toast.LENGTH_SHORT).show();
+            int i = path.lastIndexOf('.');
+            if (i > 0) {
+                extension = path.substring(i+1);
+            }
+            //Log.d("Myapp", extension);
+
             super.onActivityResult(requestCode, resultCode, data);
-            //uploadFile(uri);
-            //sendMessageToUser(file_name, true);
+
         }
 
     }
 
-    void uploadFile(Uri uri, String messageId) {
-        //Uri file =  Uri.fromFile(new File(path));
-        StorageReference reference = FirebaseStorage.getInstance().getReference().child("file").child(chatroomModel.getChatroomId()).child(Objects.requireNonNull(messageId));
+    void uploadFile(Uri uri, String messageId){
+
+        StorageReference reference = adapter.getReference(chatroomId, messageId);
+        String file_name = uri.getPath();
+        String[] temp = file_name.split("/");
+        file_name = temp[temp.length-1];
+
+        StorageMetadata metadata = new StorageMetadata.Builder()
+                .setCustomMetadata("File_name", file_name).build();
+
         reference.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 Toast.makeText(ChatActivity.this, "file uploaded", Toast.LENGTH_SHORT).show();
+                 reference.updateMetadata(metadata);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
