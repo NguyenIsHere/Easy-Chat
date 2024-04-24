@@ -94,7 +94,7 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
     @Override
     protected void onBindViewHolder(@NonNull ChatModeViewHolder holder, int position, @NonNull ChatMessageModel model) {
         if (model.getSenderId().equals(FirebaseUtil.currentUserId())) {
-            holder.rightChatLayout.setVisibility(View.VISIBLE);
+            holder.rightGroupLayout.setVisibility(View.VISIBLE);
             holder.rightChatTextview.setText(model.getMessage());
             holder.leftGroupLayout.setVisibility(View.GONE);
             //check message on sender view
@@ -131,7 +131,7 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             });
         } else {
             holder.rightGroupLayout.setVisibility(View.GONE);
-            holder.leftChatLayout.setVisibility(View.VISIBLE);
+            holder.leftGroupLayout.setVisibility(View.VISIBLE);
             holder.leftChatTextview.setText(model.getMessage());
             // Get the sender's profile picture URL
             FirebaseUtil.getOtherProfilePicReference(model.getSenderId()).getDownloadUrl().addOnCompleteListener(t -> {
