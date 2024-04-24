@@ -1,9 +1,12 @@
 package com.example.easychat;
 
+import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -103,10 +106,10 @@ public class ChatActivity extends AppCompatActivity {
     ImageView imageView;
 
     String messageId;
+    static boolean inChat;
 
     ImageButton uploadBtn;
     Uri uri;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -141,30 +144,27 @@ public class ChatActivity extends AppCompatActivity {
             public void onClick(View view) {
                 showFileChooser();
             }
-        }) ;
+        });
 
-        backBtn.setOnClickListener(v ->{
-            getOnBackPressedDispatcher().onBackPressed();;
+        backBtn.setOnClickListener(v -> {
+            getOnBackPressedDispatcher().onBackPressed();
+            ;
         });
 
         otherUsername.setText(otherUser.getUsername());
-        //co che giong nhu messenger, chi khi nao bat dau nhap tin nhan thi moi tinh la da xem
-        messageInput.setOnClickListener(v -> {
-            seenMessage();
-        });
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
-            if (message.isEmpty() && uri==null) {
+            if (message.isEmpty() && uri == null) {
                 return;
-            }else if (message.isEmpty()){
-                String path= uri.getPath();
+            } else if (message.isEmpty()) {
+                String path = uri.getPath();
 
                 String[] str = path.split("/");
-                message = str[str.length-1];
+                message = str[str.length - 1];
                 sendMessageToUser(message);
                 uri = null;
-            }else{
+            } else {
                 sendMessageToUser(message);
             }
         });
@@ -179,6 +179,7 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     void setupChatRecyclerView() {
         // Tạo câu truy vấn để lấy tin nhắn từ Firestore
         Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId).orderBy("timestamp", Query.Direction.DESCENDING);
@@ -194,6 +195,28 @@ public class ChatActivity extends AppCompatActivity {
         manager.setStackFromEnd(true);
         recyclerView.setLayoutManager(manager);
         recyclerView.setAdapter(adapter);
+
+        recyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    for (int i = 0; i < recyclerView.getChildCount(); i++) {
+                        View child = recyclerView.getChildAt(i);
+                        ChatRecyclerAdapter.ChatModeViewHolder holder = getViewHolder(i);
+                        if (holder != null && holder.deleteMessageTextview.getVisibility() == View.VISIBLE) {
+                            Rect outRect = new Rect();
+                            holder.rightChatLayout.getGlobalVisibleRect(outRect);
+                            if (!outRect.contains((int) motionEvent.getRawX(), (int) motionEvent.getRawY())) {
+                                holder.deleteMessageTextview.setVisibility(View.GONE);
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+
         // Bắt đầu lắng nghe thay đổi từ Firestore
         adapter.startListening();
         // Đăng ký observer cho adapter để lắng nghe sự kiện thêm item
@@ -233,13 +256,14 @@ public class ChatActivity extends AppCompatActivity {
         chatroomModel.setLastMessageTimestamp(Timestamp.now());
         chatroomModel.setLastMessageSenderId(FirebaseUtil.currentUserId());
         chatroomModel.setLastMessage(message);
-        DocumentReference newMessage =  FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
+        DocumentReference newMessage = FirebaseUtil.getChatroomMessagesReference(chatroomId).document();
         messageId = newMessage.getId();
         chatroomModel.setLastMessageId(messageId);
         FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
         ChatMessageModel chatMessageModel = new ChatMessageModel(message, FirebaseUtil.currentUserId(), Timestamp.now(), messageId, otherUser.getUserId(), false);
-        if(uri != null){
-            uploadFile(uri, messageId);}
+        if (uri != null) {
+            uploadFile(uri, messageId);
+        }
         newMessage.set(chatMessageModel).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 messageInput.setText("");
@@ -275,6 +299,7 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
+
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
         OkHttpClient client = new OkHttpClient();
@@ -297,20 +322,20 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-    void checkLast(){
+
+    void checkLast() {
         AggregateQuery countQuery = FirebaseUtil.getChatroomMessagesReference(chatroomId).count();
         countQuery.get(AggregateSource.SERVER).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 // Count fetched successfully
                 AggregateQuerySnapshot snapshot = task.getResult();
                 // Check there no more documents in collection
-                if(snapshot.getCount() == 0){
+                if (snapshot.getCount() == 0) {
                     chatroomModel.setLastMessageTimestamp(Timestamp.now());
                     chatroomModel.setLastMessageSenderId("");
                     chatroomModel.setLastMessage("");
                     FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
-                }
-                else{
+                } else {
                     // Get last message by timestamp
                     Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
                             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -320,7 +345,7 @@ public class ChatActivity extends AppCompatActivity {
                             QuerySnapshot snapshot_2 = task_2.getResult();
                             ChatMessageModel lastMessage = snapshot_2.getDocuments().get(0).toObject(ChatMessageModel.class);
                             // Compare last message in database with client model message
-                            if(!Objects.equals(chatroomModel.getLastMessageId(), lastMessage.getMessageId())){
+                            if (!Objects.equals(chatroomModel.getLastMessageId(), lastMessage.getMessageId())) {
                                 chatroomModel.setLastMessageTimestamp(lastMessage.getTimestamp());
                                 chatroomModel.setLastMessageSenderId(lastMessage.getSenderId());
                                 chatroomModel.setLastMessage(lastMessage.getMessage());
@@ -333,18 +358,20 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
     }
-    void seenMessage(){
-        CollectionReference reference =  FirebaseUtil.getChatroomMessagesReference(chatroomId);
+
+    void seenMessage() {
+        CollectionReference reference = FirebaseUtil.getChatroomMessagesReference(chatroomId);
         reference.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
-                if (error != null){
+                if (error != null) {
                     error.printStackTrace();
                 }
-                for (DocumentSnapshot snapshot: value.getDocuments()){
+                for (DocumentSnapshot snapshot : value.getDocuments()) {
                     // nguoi 1 send message nguoi 2 thi phai kiem tra nguoc nhau
-                    if(snapshot.getString("senderId").equals(otherUser.getUserId())
-                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())){
+                    if (snapshot.getString("senderId").equals(otherUser.getUserId())
+                            && snapshot.getString("receiverId").equals(FirebaseUtil.currentUserId())
+                            && inChat) {
                         HashMap<String, Object> map = new HashMap<>();
                         map.put("seen", true);
                         snapshot.getReference().update(map);
@@ -355,26 +382,34 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        inChat = true;
+        seenMessage();
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
-        messageInput.setOnClickListener(null);
+        inChat = false;
     }
 
 
-    private void showFileChooser(){
+    private void showFileChooser() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
 
-        try{
+        try {
             startActivityForResult(Intent.createChooser(intent, "Select a file"), 100);
-        } catch (Exception exception){
+        } catch (Exception exception) {
             Toast.makeText(this, "Please install a file manager", Toast.LENGTH_SHORT).show();
         }
     }
 
-    @Override protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data){
-        if (requestCode == 100  && resultCode == RESULT_OK && data != null){
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data) {
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
             uri = data.getData();
             String path = uri.getPath();
             String extension = "";

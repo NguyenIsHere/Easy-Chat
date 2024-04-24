@@ -22,9 +22,6 @@ public class MainActivity extends AppCompatActivity {
     ImageButton searchButton;
     ChatFragment chatFragment;
     ProfileFragment profileFragment;
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
