@@ -3,7 +3,8 @@ package com.example.easychat.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import android.net.Uri;
 
 import android.os.Environment;
@@ -41,6 +42,9 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.io.File;
@@ -169,8 +173,20 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
         pathReference.getMetadata().addOnSuccessListener(new OnSuccessListener<StorageMetadata>() {
             @Override
             public void onSuccess(StorageMetadata storageMetadata) {
-                filename = storageMetadata.getCustomMetadata("File_name");
-                //Log.d("eMetadate1", filename);
+                LocalDateTime currentDateTime = LocalDateTime.now();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddHHmmss");
+                String formattedDateTime = currentDateTime.format(formatter);
+
+                filename = storageMetadata.getCustomMetadata("File_name") ;
+                String[] temp = filename.split("\\.");
+                try{
+                    filename = temp[0]+"_"+formattedDateTime + "." + temp[1];
+                }catch (Exception e){
+                    filename = temp[0]+"_"+formattedDateTime;
+                }
+
+
+                Log.d("eMetadate1", formattedDateTime);
                 File rootPath = new File(Environment.getExternalStorageDirectory(), "Download");
 
                 Log.d("eMetadate2", filename);
@@ -179,13 +195,13 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
                 pathReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
-                        Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "File "+filename+" downloaded", Toast.LENGTH_SHORT).show();
                         Log.d("eMetadate", "new file");
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception exception) {
-                        Toast.makeText(context, "File failed to download", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, exception.toString(), Toast.LENGTH_SHORT).show();
                     }
                 });
             }
