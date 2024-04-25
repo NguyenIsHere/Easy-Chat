@@ -1,10 +1,13 @@
 package com.example.easychat;
 
 import android.annotation.SuppressLint;
+
+import android.database.Cursor;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -79,6 +82,7 @@ import java.io.File;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
@@ -95,6 +99,8 @@ import okhttp3.Response;
 public class ChatActivity extends AppCompatActivity {
 
     UserModel otherUser;
+
+    AndroidUtil utils;
     String chatroomId;
     ChatroomModel chatroomModel;
     EditText messageInput;
@@ -127,6 +133,7 @@ public class ChatActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.chat_recycler_view);
         imageView = findViewById(R.id.profile_pic_image_view);
         uploadBtn = findViewById(R.id.upload_btn);
+
 
         FirebaseApp.initializeApp(ChatActivity.this);
 
@@ -412,13 +419,6 @@ public class ChatActivity extends AppCompatActivity {
         if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
             uri = data.getData();
             String path = uri.getPath();
-            String extension = "";
-
-            int i = path.lastIndexOf('.');
-            if (i > 0) {
-                extension = path.substring(i+1);
-            }
-            //Log.d("Myapp", extension);
 
             super.onActivityResult(requestCode, resultCode, data);
 
@@ -429,9 +429,11 @@ public class ChatActivity extends AppCompatActivity {
     void uploadFile(Uri uri, String messageId){
 
         StorageReference reference = adapter.getReference(chatroomId, messageId);
-        String file_name = uri.getPath();
-        String[] temp = file_name.split("/");
-        file_name = temp[temp.length-1];
+        String file_name = uri.toString();
+        //File wut = new File(new URI(file_name));
+        //String[] temp = file_name.split("/");
+        file_name = getFileName(uri);
+        Log.d("WTF", file_name);
 
         StorageMetadata metadata = new StorageMetadata.Builder()
                 .setCustomMetadata("File_name", file_name).build();
@@ -454,4 +456,29 @@ public class ChatActivity extends AppCompatActivity {
         return (ChatRecyclerAdapter.ChatModeViewHolder) recyclerView.findViewHolderForAdapterPosition(position);
     }
 
+    public String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+
+            }finally
+            {
+                cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
 }
+
+

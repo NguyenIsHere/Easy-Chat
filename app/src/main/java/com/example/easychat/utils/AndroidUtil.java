@@ -2,7 +2,10 @@ package com.example.easychat.utils;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
+import android.content.ContentResolver;
+import android.provider.OpenableColumns;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -36,4 +39,6 @@ public class AndroidUtil {
                 .load(imageUri)
                 .apply(RequestOptions.circleCropTransform()).into(imageView);
     }
+
 }
+
