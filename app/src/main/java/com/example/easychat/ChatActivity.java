@@ -76,6 +76,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
 import java.io.File;
 
 
@@ -162,7 +163,7 @@ public class ChatActivity extends AppCompatActivity {
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
-            if (message.isEmpty() ) {
+            if (message.isEmpty()) {
                 return;
             } // If there is no message and a file waiting to upload
             else {
@@ -228,6 +229,7 @@ public class ChatActivity extends AppCompatActivity {
                 super.onItemRangeInserted(positionStart, itemCount);
                 recyclerView.smoothScrollToPosition(0);
             }
+
             public void onItemRangeRemoved(int positionStart, int itemCount) {
                 super.onItemRangeRemoved(positionStart, itemCount);
                 checkLast();
@@ -423,7 +425,7 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    void uploadFile(Uri uri, String messageId){
+    void uploadFile(Uri uri, String messageId) {
 
         StorageReference reference = adapter.getReference(chatroomId, messageId);
         String file_name = getFileName(uri);
@@ -436,7 +438,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 Toast.makeText(ChatActivity.this, "file uploaded", Toast.LENGTH_SHORT).show();
-                 reference.updateMetadata(metadata);
+                reference.updateMetadata(metadata);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override

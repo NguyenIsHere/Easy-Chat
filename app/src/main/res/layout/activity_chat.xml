@@ -66,7 +66,7 @@
             android:id="@+id/upload_btn"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:src="@drawable/back_icon"
+            android:src="@drawable/file_icon"
             android:layout_alignParentStart="true"
             android:layout_centerInParent="true"
             />
@@ -84,7 +84,7 @@
             android:layout_marginBottom="10dp"
             android:layout_toLeftOf="@id/message_send_btn"
             android:autofillHints=""
-            android:background="@drawable/edit_text_rounded_corner"
+            android:background="@drawable/edit_text_full_rounded_corner"
             android:elevation="4dp"
             android:hint="@string/write_message_here"
             android:padding="10dp" />
