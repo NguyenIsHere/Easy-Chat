@@ -162,16 +162,11 @@ public class ChatActivity extends AppCompatActivity {
 
         sendMessageBtn.setOnClickListener(v -> {
             String message = messageInput.getText().toString().trim();
-            if (message.isEmpty() && uri == null) {
+            if (message.isEmpty() ) {
                 return;
-            } else if (message.isEmpty()) {
-                String path = uri.getPath();
-
-                String[] str = path.split("/");
-                message = str[str.length - 1];
-                sendMessageToUser(message);
-                uri = null;
-            } else {
+            } // If there is no message and a file waiting to upload
+            else {
+                //Send text messgae only
                 sendMessageToUser(message);
             }
         });
@@ -341,6 +336,7 @@ public class ChatActivity extends AppCompatActivity {
                     chatroomModel.setLastMessageTimestamp(Timestamp.now());
                     chatroomModel.setLastMessageSenderId("");
                     chatroomModel.setLastMessage("");
+                    chatroomModel.setLastMessageId("");
                     FirebaseUtil.getChatroomReference(chatroomId).set(chatroomModel);
                 } else {
                     // Get last message by timestamp
@@ -418,22 +414,20 @@ public class ChatActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data) {
         if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
             uri = data.getData();
-            String path = uri.getPath();
 
             super.onActivityResult(requestCode, resultCode, data);
 
-        }
+            sendMessageToUser(getFileName(uri));
 
+            uri = null;
+        }
     }
 
     void uploadFile(Uri uri, String messageId){
 
         StorageReference reference = adapter.getReference(chatroomId, messageId);
-        String file_name = uri.toString();
-        //File wut = new File(new URI(file_name));
-        //String[] temp = file_name.split("/");
-        file_name = getFileName(uri);
-        Log.d("WTF", file_name);
+        String file_name = getFileName(uri);
+
 
         StorageMetadata metadata = new StorageMetadata.Builder()
                 .setCustomMetadata("File_name", file_name).build();
@@ -457,27 +451,16 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     public String getFileName(Uri uri) {
-        String result = null;
-        if (uri.getScheme().equals("content")) {
-            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                }
-
-            }finally
-            {
-                cursor.close();
-            }
-        }
-        if (result == null) {
-            result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) {
-                result = result.substring(cut + 1);
-            }
-        }
-        return result;
+        Cursor returnCursor =
+                getContentResolver().query(uri, null, null, null, null);
+        /*
+         * Get the column indexes of the data in the Cursor,
+         * move to the first row in the Cursor, get the data,
+         * and display it.
+         */
+        returnCursor.moveToFirst();
+        int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+        return returnCursor.getString(nameIndex);
     }
 }
 
