@@ -174,6 +174,10 @@ public class ChatActivity extends AppCompatActivity {
 
         getOrCreateChatroomModel();
         setupChatRecyclerView();
+
+        // Call loadInitialMessages() after setting up the RecyclerView
+        adapter.loadInitialMessages();
+
         // what is this
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -233,6 +237,19 @@ public class ChatActivity extends AppCompatActivity {
             public void onItemRangeRemoved(int positionStart, int itemCount) {
                 super.onItemRangeRemoved(positionStart, itemCount);
                 checkLast();
+            }
+        });
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (manager != null) {
+                    int firstVisibleItemPosition = manager.findFirstVisibleItemPosition();
+                    if (firstVisibleItemPosition == 0) {
+                        adapter.loadMoreMessages();
+                    }
+                }
             }
         });
     }
@@ -464,6 +481,9 @@ public class ChatActivity extends AppCompatActivity {
         int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
         return returnCursor.getString(nameIndex);
     }
+
+    // Add this method
+
 }
 
 
