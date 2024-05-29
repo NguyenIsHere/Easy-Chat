@@ -239,6 +239,12 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
     }
 
     public void loadMoreMessages() {
+
+        if (lastVisible == null) {
+            // No more documents to load
+            return;
+        }
+
         Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .startAfter(lastVisible)
