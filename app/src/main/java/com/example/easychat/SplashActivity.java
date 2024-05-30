@@ -21,7 +21,7 @@ public class SplashActivity extends AppCompatActivity {
         if(getIntent().getExtras()!=null){
             //from notification
             String userId = getIntent().getExtras().getString("userId");
-            if(userId!=null){
+
                 FirebaseUtil.allUserCollectionReference().document(userId).get()
                         .addOnCompleteListener(task -> {
                             if(task.isSuccessful()){
@@ -38,7 +38,6 @@ public class SplashActivity extends AppCompatActivity {
                                 finish();
                             }
                         });
-            }
         }else{
             // normal launch
             new Handler().postDelayed(new Runnable() {
