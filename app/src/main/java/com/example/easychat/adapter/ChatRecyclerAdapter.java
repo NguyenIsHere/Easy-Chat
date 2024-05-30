@@ -36,6 +36,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
@@ -209,6 +210,54 @@ public class ChatRecyclerAdapter extends FirestoreRecyclerAdapter<ChatMessageMod
             @Override
             public void onFailure(@NonNull Exception e) {
                 return;
+            }
+        });
+    }
+
+    private DocumentSnapshot lastVisible;
+
+    public void loadInitialMessages() {
+        Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(20);
+
+        FirestoreRecyclerOptions<ChatMessageModel> options = new FirestoreRecyclerOptions.Builder<ChatMessageModel>()
+                .setQuery(query, ChatMessageModel.class)
+                .build();
+
+        // Use this options to initialize your adapter
+
+        query.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<DocumentSnapshot> documents = task.getResult().getDocuments();
+                if (!documents.isEmpty()) {
+                    lastVisible = documents.get(documents.size() - 1);
+                }
+                Log.d("LoadInitialMessages", "Loaded " + documents.size() + " messages");
+            }
+        });
+    }
+
+    public void loadMoreMessages() {
+
+        if (lastVisible == null) {
+            // No more documents to load
+            return;
+        }
+
+        Query query = FirebaseUtil.getChatroomMessagesReference(chatroomId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .startAfter(lastVisible)
+                .limit(20);
+
+        query.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<DocumentSnapshot> documents = task.getResult().getDocuments();
+                if (!documents.isEmpty()) {
+                    lastVisible = documents.get(documents.size() - 1);
+                    // Add the new messages to your adapter
+                }
+                Log.d("LoadMoreMessages", "Loaded " + documents.size() + " messages");
             }
         });
     }
