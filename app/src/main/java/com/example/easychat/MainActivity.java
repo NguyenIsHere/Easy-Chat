@@ -1,12 +1,13 @@
 package com.example.easychat;
 
+import androidx.activity.OnBackPressedDispatcher;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.FileUtils;
-import android.util.Log;
 import android.view.MenuItem;
 import android.widget.ImageButton;
 
@@ -14,7 +15,6 @@ import com.example.easychat.utils.FirebaseUtil;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.storage.StorageReference;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
         getFCMToken();
     }
+
+
 
     void getFCMToken(){
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {

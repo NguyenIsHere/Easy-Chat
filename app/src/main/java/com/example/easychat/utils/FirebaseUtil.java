@@ -1,6 +1,7 @@
 package com.example.easychat.utils;
 
 import android.annotation.SuppressLint;
+import android.util.Log;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -16,11 +17,15 @@ import java.util.Objects;
 
 public class FirebaseUtil {
     public static String currentUserId() {
+        String userId = null;
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            return FirebaseAuth.getInstance().getCurrentUser().getUid();
+            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
-        return null;
+        Log.d("FirebaseUtil", "currentUserId: " + userId);
+        return userId;
     }
+
+
 
     public static boolean isLoggedIn() {
         return currentUserId() != null;
