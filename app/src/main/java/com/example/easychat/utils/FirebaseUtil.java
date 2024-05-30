@@ -1,6 +1,8 @@
 package com.example.easychat.utils;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import com.google.firebase.Timestamp;
@@ -24,8 +26,6 @@ public class FirebaseUtil {
         Log.d("FirebaseUtil", "currentUserId: " + userId);
         return userId;
     }
-
-
 
     public static boolean isLoggedIn() {
         return currentUserId() != null;
@@ -81,6 +81,21 @@ public class FirebaseUtil {
 
     public static StorageReference getOtherProfilePicReference(String otherUserId) {
         return FirebaseStorage.getInstance().getReference().child("profile_pic").child(Objects.requireNonNull(otherUserId));
+    }
+
+    private static final String SHARED_PREFS_FILE = "com.example.easychat";
+    private static final String USER_ID_KEY = "userId";
+
+    public static void saveUserId(Context context, String userId) {
+        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_FILE, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(USER_ID_KEY, userId);
+        editor.apply();
+    }
+
+    public static String getUserId(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(SHARED_PREFS_FILE, Context.MODE_PRIVATE);
+        return prefs.getString(USER_ID_KEY, null);
     }
 
 }

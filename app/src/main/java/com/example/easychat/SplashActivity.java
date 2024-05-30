@@ -1,45 +1,57 @@
 package com.example.easychat;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 
 import com.example.easychat.model.UserModel;
 import com.example.easychat.utils.AndroidUtil;
 import com.example.easychat.utils.FirebaseUtil;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class SplashActivity extends AppCompatActivity {
-    private Bundle extras;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
+        String userId = null;
         if(getIntent().getExtras()!=null){
             //from notification
-            String userId = getIntent().getExtras().getString("userId");
+            userId = getIntent().getExtras().getString("userId");
+        }
 
-                FirebaseUtil.allUserCollectionReference().document(userId).get()
-                        .addOnCompleteListener(task -> {
-                            if(task.isSuccessful()){
-                                UserModel model = task.getResult().toObject(UserModel.class);
+        if (userId == null) {
+            // Try to get userId from SharedPreferences
+            userId = FirebaseUtil.getUserId(this);
+        }
 
-                                Intent mainIntent = new Intent(this,MainActivity.class);
-                                mainIntent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                                startActivity(mainIntent);
+        if (userId != null) {
+            FirebaseUtil.allUserCollectionReference().document(userId).get()
+                    .addOnCompleteListener(task -> {
+                        if(task.isSuccessful()){
+                            UserModel model = task.getResult().toObject(UserModel.class);
 
-                                Intent intent = new Intent(this, ChatActivity.class);
-                                AndroidUtil.passUserModelAsIntent(intent,model);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(intent);
-                                finish();
-                            }
-                        });
-        }else{
-            // normal launch
+                            Intent mainIntent = new Intent(this,MainActivity.class);
+                            mainIntent.setFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                            startActivity(mainIntent);
+
+                            Intent intent = new Intent(this, ChatActivity.class);
+                            AndroidUtil.passUserModelAsIntent(intent,model);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                            finish();
+                        }
+                    });
+        } else {
+            // Normal Launch
             new Handler().postDelayed(new Runnable() {
                 @Override
                 public void run() {
